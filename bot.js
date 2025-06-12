@@ -2,74 +2,69 @@ require('dotenv').config();
 const { createClient } = require('bedrock-protocol');
 const Vec3 = require('vec3');
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-const bot = createClient({
-  host: 'ysrhameed.aternos.me',
-  port: 23539,
-  version: '1.21.80',
-  offline: false,
-  username: process.env.XBOX_EMAIL,
-  password: process.env.XBOX_PASSWORD,
-  authTitle: 'minecraft',
-  skipEditProfile: true
+// Setup
+const client = createClient({
+  host: process.env.SERVER_HOST,
+  port: parseInt(process.env.SERVER_PORT),
+  username: process.env.BOT_EMAIL,
+  offline: false
 });
 
-bot.on('join', async () => {
-  console.log('✅ Bot joined the server!');
-  await mainLoop();
+let position = new Vec3(0, 0, 0);
+let hasBuiltShelter = false;
+
+// Logging
+client.on('join', () => {
+  console.log('[✅] Bot joined the server!');
 });
 
-bot.on('disconnect', reason => {
-  console.log('❌ Disconnected:', reason);
+client.on('text', (packet) => {
+  console.log(`[CHAT] ${packet.source_name}: ${packet.message}`);
 });
 
-bot.on('error', err => {
-  console.error('❌ Error:', err);
-});
-
-// === Logic Starts ===
-
-async function mainLoop() {
-  try {
-    while (true) {
-      await gatherWood();
-      await buildHouse();
-      await craftAndPlaceBed();
-      await storeItemsInChest();
-      console.log('✅ Task cycle complete. Sleeping 30 sec...');
-      await sleep(30000);
-    }
-  } catch (e) {
-    console.error('❌ Bot crashed in loop:', e);
+// Position updates
+client.on('move_player', (packet) => {
+  if (packet.runtime_id === client.entityId) {
+    position = new Vec3(packet.x, packet.y, packet.z);
   }
+});
+
+// Example smart behavior
+function randomMove() {
+  const x = position.x + Math.floor(Math.random() * 5 - 2);
+  const z = position.z + Math.floor(Math.random() * 5 - 2);
+
+  client.queue('move_player', {
+    runtime_id: client.entityId,
+    position: { x: x, y: position.y, z: z },
+    pitch: 0,
+    yaw: 0,
+    head_yaw: 0,
+    mode: 0,
+    on_ground: true,
+    ridden_runtime_id: 0,
+    tick: BigInt(Date.now())
+  });
+  console.log(`[MOVE] Bot moved to ${x}, ${position.y}, ${z}`);
 }
 
-async function gatherWood() {
-  console.log('🪵 Gathering wood...');
-  // In real version, bot would scan nearby blocks
-  // Simulate collecting logs
-  await sleep(3000);
-  console.log('✅ Collected logs.');
-}
+// Simulate survival tasks
+setInterval(() => {
+  randomMove();
 
-async function buildHouse() {
-  console.log('🏠 Building house...');
-  // Build 3x3x2 cube house
-  await sleep(5000);
-  console.log('✅ House built.');
-}
+  // Example: Build small shelter
+  if (!hasBuiltShelter) {
+    console.log('[🧱] Building basic shelter...');
+    // This is a placeholder — in real bots you need structure & block placement logic.
+    hasBuiltShelter = true;
+  }
+}, 8000);
 
-async function craftAndPlaceBed() {
-  console.log('🛏️ Crafting and placing bed...');
-  // Check wool + planks → craft bed → place
-  await sleep(2000);
-  console.log('✅ Bed crafted and placed.');
-}
-
-async function storeItemsInChest() {
-  console.log('📦 Storing items in chest...');
-  // Simulate chest placement and storage
-  await sleep(2000);
-  console.log('✅ Items stored.');
-}
+// Auto reconnect
+client.on('disconnect', (reason) => {
+  console.error('[❌] Disconnected:', reason);
+  setTimeout(() => {
+    console.log('[🔄] Reconnecting...');
+    client.connect();
+  }, 5000);
+});
