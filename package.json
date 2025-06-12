@@ -1,7 +1,7 @@
 {
   "name": "survivor-bot",
   "version": "1.0.0",
-  "description": "Minecraft Bedrock smart survival bot",
+  "description": "A smart Minecraft Bedrock Edition survival bot",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
@@ -9,7 +9,7 @@
   "author": "ysr-hameed",
   "license": "MIT",
   "dependencies": {
-    "bedrock-protocol": "^1.12.0",
+    "bedrock-protocol": "^3.45.0",
     "dotenv": "^16.0.3",
     "vec3": "^0.1.7"
   }
