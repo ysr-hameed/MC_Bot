@@ -1,6 +1,7 @@
 {
   "name": "survivor-bot",
   "version": "1.0.0",
+  "description": "Smart Minecraft PE bot for survival gameplay",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
@@ -9,3 +10,4 @@
     "bedrock-protocol": "^3.45.0",
     "vec3": "^0.1.7"
   }
+}
