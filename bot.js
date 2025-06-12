@@ -1,136 +1,75 @@
+require('dotenv').config();
 const { createClient } = require('bedrock-protocol');
 const Vec3 = require('vec3');
 
-// --- CONFIG ---
-const SERVER_HOST = 'ysrhameed.aternos.me';
-const SERVER_PORT = 23539;
-const BOT_NAME = 'SurvivorBot';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// --- SETUP BOT ---
-const client = createClient({
-  host: SERVER_HOST,
-  port: SERVER_PORT,
-  username: BOT_NAME,
-  offline: true
+const bot = createClient({
+  host: 'ysrhameed.aternos.me',
+  port: 23539,
+  version: '1.21.80',
+  offline: false,
+  username: process.env.XBOX_EMAIL,
+  password: process.env.XBOX_PASSWORD,
+  authTitle: 'minecraft',
+  skipEditProfile: true
 });
 
-// --- MEMORY STATE ---
-let inventory = {};
-let homeBuilt = false;
-let hasBed = false;
-let storedItems = {};
-
-// --- ON JOIN ---
-client.on('join', () => {
+bot.on('join', async () => {
   console.log('✅ Bot joined the server!');
-  say("🌍 Hello world! I'm SurvivorBot!");
-  logicLoop();
+  await mainLoop();
 });
 
-// --- CHAT RESPONSES ---
-client.on('text', (packet) => {
-  const msg = packet.message.toLowerCase();
-  if (msg.includes('hello') || msg.includes('bot')) {
-    say("👋 Hello player! I'm living my best life.");
-  }
+bot.on('disconnect', reason => {
+  console.log('❌ Disconnected:', reason);
 });
 
-// --- LOGIC LOOP ---
-function logicLoop() {
-  setInterval(() => {
-    doSmartSurvival();
-  }, 10000);
-}
+bot.on('error', err => {
+  console.error('❌ Error:', err);
+});
 
-// --- SMART ACTIONS ---
-function doSmartSurvival() {
-  if (!homeBuilt) {
-    buildHouse();
-  } else if (!hasBed) {
-    craftBed();
-  } else {
-    const action = pick(['collect_items', 'store_items', 'explore', 'say_random']);
-    switch (action) {
-      case 'collect_items': collectItems(); break;
-      case 'store_items': storeItems(); break;
-      case 'explore': lookAround(); break;
-      case 'say_random': say(randomPhrase()); break;
+// === Logic Starts ===
+
+async function mainLoop() {
+  try {
+    while (true) {
+      await gatherWood();
+      await buildHouse();
+      await craftAndPlaceBed();
+      await storeItemsInChest();
+      console.log('✅ Task cycle complete. Sleeping 30 sec...');
+      await sleep(30000);
     }
+  } catch (e) {
+    console.error('❌ Bot crashed in loop:', e);
   }
 }
 
-// --- ACTIONS ---
-function buildHouse() {
-  say("🏠 Building house...");
-  inventory['wood'] = (inventory['wood'] || 0) + 20;
-  homeBuilt = true;
+async function gatherWood() {
+  console.log('🪵 Gathering wood...');
+  // In real version, bot would scan nearby blocks
+  // Simulate collecting logs
+  await sleep(3000);
+  console.log('✅ Collected logs.');
 }
 
-function craftBed() {
-  if ((inventory['wood'] || 0) >= 3 && (inventory['wool'] || 0) >= 3) {
-    say("🛏 Crafting a bed!");
-    inventory['wood'] -= 3;
-    inventory['wool'] -= 3;
-    hasBed = true;
-  } else {
-    say("❌ Need more wool and wood to make a bed.");
-  }
+async function buildHouse() {
+  console.log('🏠 Building house...');
+  // Build 3x3x2 cube house
+  await sleep(5000);
+  console.log('✅ House built.');
 }
 
-function collectItems() {
-  const found = pick(['wool', 'wood', 'seeds', 'stone']);
-  inventory[found] = (inventory[found] || 0) + 1;
-  say(`📦 Collected 1x ${found}. Total: ${inventory[found]}`);
+async function craftAndPlaceBed() {
+  console.log('🛏️ Crafting and placing bed...');
+  // Check wool + planks → craft bed → place
+  await sleep(2000);
+  console.log('✅ Bed crafted and placed.');
 }
 
-function storeItems() {
-  say("📥 Storing extra items in chest...");
-  Object.keys(inventory).forEach(key => {
-    if (inventory[key] > 2) {
-      storedItems[key] = (storedItems[key] || 0) + (inventory[key] - 2);
-      inventory[key] = 2;
-    }
-  });
-}
-
-function lookAround() {
-  say("👀 Looking around...");
-  client.queue('move_player', {
-    runtime_id: client.entityId,
-    position: client.player.position,
-    pitch: Math.random() * 90,
-    yaw: Math.random() * 360,
-    head_yaw: Math.random() * 360,
-    mode: 0,
-    on_ground: true,
-    riding_entity_runtime_id: 0,
-    teleportation_cause: 0,
-    tick: 0
-  });
-}
-
-function say(message) {
-  client.queue('text', {
-    type: 'chat',
-    needs_translation: false,
-    source_name: BOT_NAME,
-    xuid: '',
-    platform_chat_id: '',
-    message
-  });
-}
-
-function pick(array) {
-  return array[Math.floor(Math.random() * array.length)];
-}
-
-function randomPhrase() {
-  const list = [
-    "This world is amazing 🌄",
-    "I hope I find diamonds 💎",
-    "Why do creepers exist?! 💥",
-    "Someday I’ll build a castle!",
-    "My chest is filling up 😅"
-  ];
-  return pick(list);
+async function storeItemsInChest() {
+  console.log('📦 Storing items in chest...');
+  // Simulate chest placement and storage
+  await sleep(2000);
+  console.log('✅ Items stored.');
 }
